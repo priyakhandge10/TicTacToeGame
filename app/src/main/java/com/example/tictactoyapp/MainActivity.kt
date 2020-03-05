@@ -159,20 +159,6 @@ class MainActivity : AppCompatActivity() {
 
     fun restartGame() {
 
-//        var btn_new_activity = findViewById(R.id.subbutton) as Button
-//
-//        btn_new_activity.setOnClickListener {
-//            val intent = Intent(context, NewActivity::class.java)
-//            startActivity(intent);
-//        }
-//
-//        button {
-//            onClick { startActivity<SecondActivity>() }
-//        }
-
-
-
-
         activePlayer = 1
         player1.clear()
         player2.clear()

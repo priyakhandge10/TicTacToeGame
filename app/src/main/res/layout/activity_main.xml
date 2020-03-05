@@ -114,7 +114,7 @@
             android:layout_height="40pt"
             android:background="#817878"
             android:includeFontPadding="true"
-            android:text="Restart"
+            android:text="Restart Game"
             android:textSize="18sp"
             android:textStyle="bold" />
     </TableRow>
