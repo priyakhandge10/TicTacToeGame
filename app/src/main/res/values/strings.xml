@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">TicTacToyApp</string>
+    <string name="app_name">TicTocToeGame</string>
+    <string name="hint">Enter your mail</string>
 </resources>

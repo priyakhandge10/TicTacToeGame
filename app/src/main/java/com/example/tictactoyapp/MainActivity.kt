@@ -10,17 +10,36 @@ import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 import java.util.*
 import kotlin.collections.ArrayList
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import kotlin.collections.HashMap
 
 
 class MainActivity : AppCompatActivity() {
 
+    private var database = FirebaseDatabase.getInstance()
+    private var myRef = database.reference
+
+    var myEmail:String?= null
+
+    private var mFirebaseAnalytics:com.google.firebase.analytics.FirebaseAnalytics?=null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        mFirebaseAnalytics= com.google.firebase.analytics.FirebaseAnalytics.getInstance(this)
+
+
+        var b:Bundle=intent.extras!!
+        myEmail=b.getString("email")
+        IncommingCalls()
     }
 
 
-    fun buClick(view: View) {
+  protected  fun buClick(view: View) {
         val buSelected = view as Button
         var cellId = 0
         when (buSelected.id) {
@@ -33,14 +52,10 @@ class MainActivity : AppCompatActivity() {
             R.id.bu7 -> cellId = 7
             R.id.bu8 -> cellId = 8
             R.id.bu9 -> cellId = 9
-            R.id.subbutton -> cellId = 10
         }
 
 
-        //Log.d("buClick:", buSelected.id.toString())
-        // Log.d("buClick: cellId:",cellId.toString())
-
-        playGame(cellId, buSelected)
+     myRef.child("PlayerOnline").child(sessionID!!).child(cellId.toString()).setValue(myEmail)
 
     }
     var activePlayer = 1
@@ -53,7 +68,7 @@ class MainActivity : AppCompatActivity() {
             buSelected.setBackgroundResource(R.color.blue)
             player1.add(cellId)
             activePlayer = 2
-            autoPlay()
+
 
         } else {
             buSelected.text = "O"
@@ -95,38 +110,17 @@ class MainActivity : AppCompatActivity() {
             winer = 2
         }
 
-        if (winer == 1) {
-            player1WinsCounts += 1
+        if (winer != -1) {
             Toast.makeText(this, "Player 1 winner the game", Toast.LENGTH_LONG).show()
-            restartGame()
 
-        } else if (winer == 2) {
-            player2WinsCounts += 1
+        } else{
             Toast.makeText(this, "Player 2 winner the game", Toast.LENGTH_LONG).show()
-            restartGame()
-        }
+            }
 
 
     }
 
-    fun autoPlay() {
-
-
-        var emptyCells = ArrayList<Int>()
-
-        for (cellId in 1..9) {
-
-            if (!(player1.contains(cellId) || player2.contains(cellId))) {
-                emptyCells.add(cellId)
-            }
-        }
-
-
-
-        if (emptyCells.size == 0) {
-            restartGame()
-        }
-
+    fun autoPlay(cellId: Int) {
 
         val r = Random()
         val randIndex = r.nextInt(emptyCells.size)
@@ -152,43 +146,62 @@ class MainActivity : AppCompatActivity() {
         playGame(cellId, buSelected)
 
     }
+    fun buRequestEvent(view:android.view.View){
+        var userDemail=etEmail.text.toString()
+        myRef.child("Users").child(splitString(userDemail)).child("Request").push().setValue(myEmail)
+        playerOnline(splitString(myEmail!!) + splitString(userDemail))
+        playerSymbol= "x"
 
+    }
 
-    var player1WinsCounts = 0
-    var player2WinsCounts = 0
+    fun buAcceptEvent(view:android.view.View){
+        var userDemail = etEmail.text.toString()
+        myRef.child("Users").child(splitString(userDemail)).child("Request").push().setValue(myEmail)
+        playerOnline(splitString(userDemail) + splitString(myEmail!!))
+        playerSymbol= "o"
+    }
 
-    fun restartGame() {
+    var sessionID:String?=null
+    var playerSymbol:String?=null
+    fun playerOnline(sessionID:String){
+        this.sessionID = sessionID
 
-        activePlayer = 1
-        player1.clear()
-        player2.clear()
+        myRef.child("playerOnline").child(sessionID)
+    }
 
-        for (cellId in 1..9) {
+    fun IncommingCalls(){
+        myRef.child("Users").child(splitString(myEmail!!)).child("Request")
+            .addValueEventListener(object: ValueEventListener {
 
-            var buSelected: Button? = when (cellId) {
-                1 -> bu1
-                2 -> bu2
-                3 -> bu3
-                4 -> bu4
-                5 -> bu5
-                6 -> bu6
-                7 -> bu7
-                8 -> bu8
-                9 -> bu9
-                else -> {
-                     subbutton
+                override fun onDataChange(p0: DataSnapshot) {
+                    try {
+                        val td=p0!!.value as HashMap<String,Any>
+                        if (td!=null){
+                            var value:String
+                            for (key in td.keys){
+                                value = td[key] as String
+                                etEmail.setText(value)
+                                myRef.child("Users").child(splitString(myEmail!!)).child("Request").setValue(true)
+
+                                break
+                            }
+                        }
+
+                    }catch (ex:Exception){
+                        ex.printStackTrace()
+                    }
                 }
 
-            }
-            buSelected!!.text = ""
-            buSelected!!.setBackgroundResource(R.color.whileBu)
-            buSelected!!.isEnabled = true
-        }
+                override fun onCancelled(p0: DatabaseError) {
 
-        Toast.makeText(
-            this,
-            "Player1: $player1WinsCounts, Player2: $player2WinsCounts",
-            Toast.LENGTH_LONG
-        ).show()
+                }
+            })
     }
+
+    fun splitString(str: String): String {
+        var split = str.split("@")
+        return split[0]
+    }
+
+
 }
