@@ -1,5 +1,7 @@
 package com.example.tictactoyapp
 
+import android.app.Notification
+import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -18,7 +20,7 @@ import com.google.firebase.database.ValueEventListener
 import kotlin.collections.HashMap
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : androidx.appcompat.app.AppCompatActivity() {
 
     private var database = FirebaseDatabase.getInstance()
     private var myRef = database.reference
@@ -59,8 +61,8 @@ class MainActivity : AppCompatActivity() {
 
     }
     var activePlayer = 1
-    var player1 = ArrayList<Int>()
-    var player2 = ArrayList<Int>()
+    var player1 = java.util.ArrayList<Int>()
+    var player2 = java.util.ArrayList<Int>()
 
     fun playGame(cellId: Int, buSelected: Button) {
         if (activePlayer == 1) {
@@ -111,63 +113,96 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (winer != -1) {
-            Toast.makeText(this, "Player 1 winner the game", Toast.LENGTH_LONG).show()
+            if (winer == 1) {
+                android.widget.Toast.makeText(this, "Player 1 winner the game", Toast.LENGTH_LONG)
+                    .show()
 
-        } else{
-            Toast.makeText(this, "Player 2 winner the game", Toast.LENGTH_LONG).show()
+            } else {
+                android.widget.Toast.makeText(this, "Player 2 winner the game", Toast.LENGTH_LONG)
+                    .show()
             }
-
+        }
 
     }
 
     fun autoPlay(cellId: Int) {
 
-        val r = Random()
-        val randIndex = r.nextInt(emptyCells.size)
-        val cellId = emptyCells[randIndex]
-
-        var buSelected: Button?
-        buSelected = when (cellId) {
-            1 -> bu1
-            2 -> bu2
-            3 -> bu3
-            4 -> bu4
-            5 -> bu5
-            6 -> bu6
-            7 -> bu7
-            8 -> bu8
-            9 -> bu9
-            else -> {
-                bu1
-            }
-
-        }
-
-        playGame(cellId, buSelected)
+        var buSelect: Button?
+         when (cellId) {
+             1-> buSelect=bu1
+             2-> buSelect=bu2
+             3-> buSelect=bu3
+             4-> buSelect=bu4
+             5-> buSelect=bu5
+             6-> buSelect=bu6
+             7-> buSelect=bu7
+             8-> buSelect=bu8
+             9-> buSelect=bu9
+             else->{
+                 buSelect=bu1
+             }
+         }
+        playGame(cellId, buSelect)
 
     }
-    fun buRequestEvent(view:android.view.View){
+  protected  fun buRequestEvent(view:android.view.View){
         var userDemail=etEmail.text.toString()
         myRef.child("Users").child(splitString(userDemail)).child("Request").push().setValue(myEmail)
+
         playerOnline(splitString(myEmail!!) + splitString(userDemail))
         playerSymbol= "x"
 
     }
 
-    fun buAcceptEvent(view:android.view.View){
+    protected fun buAcceptEvent(view:android.view.View){
         var userDemail = etEmail.text.toString()
         myRef.child("Users").child(splitString(userDemail)).child("Request").push().setValue(myEmail)
+
         playerOnline(splitString(userDemail) + splitString(myEmail!!))
         playerSymbol= "o"
     }
 
     var sessionID:String?=null
     var playerSymbol:String?=null
+
     fun playerOnline(sessionID:String){
         this.sessionID = sessionID
 
+        myRef.child("playerOnline").removeValue()
         myRef.child("playerOnline").child(sessionID)
+            .addValueEventListener(object: ValueEventListener {
+
+                override fun onDataChange(p0: DataSnapshot) {
+                    try {
+                        player1.clear()
+                        player2.clear()
+                        val td=p0!!.value as HashMap<String,Any>
+                        if (td!=null){
+                            var value:String
+                            for (key in td.keys){
+                                value = td[key] as String
+                                if (value!= myEmail){
+                                    activePlayer= if (playerSymbol==="x") 1 else 2
+                                }else{
+                                    activePlayer= if (playerSymbol==="x") 2 else 1
+                                }
+                             autoPlay(key.toInt())
+                             }
+                        }
+
+                    }catch (ex:Exception){
+                        ex.printStackTrace()
+                    }
+                }
+
+                override fun onCancelled(p0: DatabaseError) {
+
+                }
+            })
+
     }
+
+    var number =0
 
     fun IncommingCalls(){
         myRef.child("Users").child(splitString(myEmail!!)).child("Request")
@@ -177,10 +212,15 @@ class MainActivity : AppCompatActivity() {
                     try {
                         val td=p0!!.value as HashMap<String,Any>
                         if (td!=null){
+
                             var value:String
                             for (key in td.keys){
                                 value = td[key] as String
                                 etEmail.setText(value)
+                                val notifyme= Notification()
+                                notifyme.Notify(applicationContext,value + " want to play tic toc toe",number)
+                                number++
+
                                 myRef.child("Users").child(splitString(myEmail!!)).child("Request").setValue(true)
 
                                 break
@@ -203,5 +243,9 @@ class MainActivity : AppCompatActivity() {
         return split[0]
     }
 
+
+}
+
+private fun Notification.Notify(applicationContext: Context?, s: String, number: Int) {
 
 }
